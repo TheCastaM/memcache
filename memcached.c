@@ -80,10 +80,10 @@ void manejador_pedidos(int socketFd, TablaHash tabla) {
 	else if (strcmp(comandos[0], "GET") == 0) {
 		KeyValue kv;
 		kv.key = strdup(comandos[1]);
-		kv.value = strdup(comandos[2]);
+		kv.value = NULL;
 		KeyValue* ret = tablahash_buscar(tabla, &kv);
 		if (ret == NULL) printf("No esta\n");
-		else printf("A");
+		else printf("%s", ret->value);
 	}
 	
 	else printf("Comando invalido");
