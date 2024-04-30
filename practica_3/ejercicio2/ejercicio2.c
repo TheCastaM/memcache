@@ -2,28 +2,32 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-int wait = 1;
+int waitA = 1;
+int waitB = 1;
 
 void *funcion_a(void *arg)
 {
 
     puts("a1");
+    waitA = 0;
+    while (waitB)
+        ;
     puts("a2");
-    wait = 0;
 }
 
 void *funcion_b(void *arg)
 {
-    while (wait)
+    while (waitA)
         ;
-
     puts("b1");
+    waitB = 0;
     puts("b2");
 
 }
 
 int main() 
 {
+    puts("New:");
     pthread_t ta, tb;
 
     pthread_create(&ta, NULL, funcion_a, NULL);
@@ -31,5 +35,6 @@ int main()
 
     pthread_join(ta, NULL);
     pthread_join(ta, NULL);
+    printf("\n\n\n");
 
 }
