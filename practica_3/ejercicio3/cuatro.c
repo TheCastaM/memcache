@@ -2,9 +2,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 #define N_FILOSOFOS 5
 #define ESPERA 5000000
+
+sem_t sem;
 
 pthread_mutex_t tenedor[N_FILOSOFOS];
 pthread_mutex_t * izq(int i) { return &tenedor[i]; }
@@ -24,13 +27,8 @@ void comer(int i)
 
 void tomar_tenedores(int i)
 {
-    if (i == 0) {
-        pthread_mutex_lock(izq(i));
-        pthread_mutex_lock(der(i));
-    } else {
-        pthread_mutex_lock(der(i));
-        pthread_mutex_lock(izq(i));
-    }
+    pthread_mutex_lock(der(i));
+    pthread_mutex_lock(izq(i));
 }
 
 void dejar_tenedores(int i)
@@ -44,15 +42,21 @@ void * filosofo(void *arg)
     int i = arg - (void*)0;
     while (1) 
     {
+        sem_wait(&sem);
+        
         tomar_tenedores(i);
         comer(i);
         dejar_tenedores(i);
         pensar(i);
+
+        sem_post(&sem);
     }
 }
 
 int main()
 {
+    sem_init(&sem, 0, 3);
+
     pthread_t filo[N_FILOSOFOS];
     
     int i;
@@ -65,31 +69,7 @@ int main()
     
     pthread_join(filo[0], NULL);
     
+    sem_destroy(&sem);
+
     return 0;
 }
-
-/**
- *  a) Podemos caer en el caso de deadlock porque 
- * si todos los procesos agarran a la vez su 
- * tenedor derecho y no llegan a agarrar el 
- * izquierdo todos se quedan esperando y no comen.
- * Como no comen no liberan el tenedor y entonces
- * quedamos en un momento donde todos esperan y 
- * nadie avanza.
- * 
- *  b) Ponemos que el comensal 0 es zurdo porque
- * sabemos que siempre va a haber un comensal. Si
- * este toma el tenedor izquierdo entonces sabemos
- * que va a poder tomar el derecho porque nadie 
- * aparte de el toma el tenedor izquiero y a partir
- * de ahi no podemos caer en un deadlock. Si este
- * no llega a tomar el tenedor izquierdo entonces
- * tampoco toma el derecho y el que esta a su 
- * derecha va a tomar su tenedor derecho y asi no 
- * caemos en un deadlock.
- *  
- *  c) Implementado en el archivo cuatro.c
- * 
- *  d) Implementado en el archivo hambre.c
- * 
-*/
