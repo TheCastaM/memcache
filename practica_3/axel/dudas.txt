@@ -1,0 +1,5 @@
+Ejercicio 3 : 
+*En el inciso d, como mido la eficiencia ?
+
+Ejercicio 4 :
+semaforos : hay forma de verificar que no queda alguno sin consumir eternamente ? ...
