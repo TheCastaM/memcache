@@ -5,7 +5,6 @@
 #include <semaphore.h>
 sem_t tabaco, papel, fosforos, otra_vez, esperando;
 
-pthread_mutex_t lock;
 
 int f1,f2,f3;
 int skip;
@@ -25,30 +24,29 @@ void fumar(int fumador) {
     f1 = 0;
     f2 = 0;
     f3 = 0;
+    skip = 0;
     sleep(1);
 }
 
 void * fumador1(void *arg) {
     while (1) {
         sem_wait(&tabaco);
-        printf("Entre f1\n");
+        //printf("Entre f1\n");
         if(skip) {
-            sem_post(&fosforos);
+            sem_post(&tabaco);
         }
         else {
-            pthread_mutex_lock(&lock);
             f1 = 1;
-            pthread_mutex_unlock(&lock);
 
             sem_post(&tabaco); /*Por si no me dan papel, le mando tbco*/
             sem_wait(&papel);
             if(!skip) {
                 sem_wait(&tabaco); /*Por si me dieron papel, cancelo*/
                 if(f3) {
-                    pthread_mutex_lock(&lock);
+   
                     skip = 1;
                     sem_post(&fosforos);
-                    pthread_mutex_unlock(&lock);
+              
                     sem_wait(&esperando);
                     fumar(1);
                     sem_post(&otra_vez);
@@ -66,22 +64,18 @@ void * fumador1(void *arg) {
 void * fumador2(void *arg) {
     while (1) {
         sem_wait(&fosforos);
-        printf("Entre f2\n");
+        //printf("Entre f2\n");
         if (skip) {
             sem_post(&fosforos);
         }
         else {
-            pthread_mutex_lock(&lock);
             f2 = 1;
-            pthread_mutex_unlock(&lock);
             sem_post(&fosforos); /*Por si no me dan tabaco, le mando fosforos*/
             sem_wait(&tabaco);
             if (!skip) {
                 sem_wait(&fosforos); /*Por si me dieron tabaco, cancelo*/
                 if (f1) {
-                    pthread_mutex_lock(&lock);
                     skip = 1;
-                    pthread_mutex_unlock(&lock);
                     sem_post(&papel);
                     sem_wait(&esperando);
                     fumar(2);
@@ -100,22 +94,18 @@ void * fumador2(void *arg) {
 void * fumador3(void *arg) {
     while (1) {
         sem_wait(&papel);
-        printf("Entre f3\n");
+        //printf("Entre f3\n");
         if (skip) {
             sem_post(&papel);
         }
         else {
-            pthread_mutex_lock(&lock);
             f3 = 1;
-            pthread_mutex_unlock(&lock);
             sem_post(&papel); /*Por si no me dan fosforos, le mando papel*/
             sem_wait(&fosforos);
             if(!skip) {
                 sem_wait(&papel); /*Por si me dieron fosforos, cancelo*/
                 if (f2) {
-                    pthread_mutex_lock(&lock);
                     skip = 1;
-                    pthread_mutex_unlock(&lock);
                     sem_post(&tabaco);
                     sem_wait(&esperando);
                     fumar(3);
@@ -141,7 +131,7 @@ int main() {
     pthread_create(&s1, NULL, fumador1, NULL);
     pthread_create(&s2, NULL, fumador2, NULL);
     pthread_create(&s3, NULL, fumador3, NULL);
-    pthread_mutex_init(&lock, NULL);
+
     agente();
     return 0;
 }
