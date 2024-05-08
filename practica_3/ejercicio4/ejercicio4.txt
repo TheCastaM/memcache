@@ -1,0 +1,8 @@
+--SOLUCION SEMAFOROS--
+Uso dos semaforos:
+*Uno para controlar que la cantidad de objetos producidos no se pase de la cantidad que puedo almacenar (si se pasa, espera)
+*Uno para controlar la cantidad de objetos producidos disponibles
+
+Funcionamiento : Si el productor puede producir, lo hace e indica que hay un objeto disponible. Si el consumidor tiene un objeto disponible
+por consumir, lo hace. Luego, avisa que se puede producir 1 mas.
+
