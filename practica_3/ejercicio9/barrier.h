@@ -5,6 +5,7 @@
 typedef struct {
     int total;  /* Total de hilos. */
     int esperando; /* Cant. de hilos esperando. */
+    pid_t* arrSemaforos;
     sem_t* semaforos; /* Semaforos de los hilos esperando. */
     pthread_mutex_t lock; /* Modifica el esperando. */
 } barrier;
