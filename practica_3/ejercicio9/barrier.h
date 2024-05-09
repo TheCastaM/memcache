@@ -1,13 +1,12 @@
 #include <stdlib.h>
-#include <semaphore.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 typedef struct {
-    int total;  /* Total de hilos. */
-    int esperando; /* Cant. de hilos esperando. */
-    pid_t* arrSemaforos;
-    sem_t* semaforos; /* Semaforos de los hilos esperando. */
-    pthread_mutex_t lock; /* Modifica el esperando. */
+    int total; /* Cant. total de hilos. */
+    int paso;
+    int bloqueadosPar; /* Cant. de hilos bloqueados. */
+    int bloqueadosImpar; /* Cant. de hilos bloqueados. */
 } barrier;
 
 void barrier_init(barrier *b, int n);

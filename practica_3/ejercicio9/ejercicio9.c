@@ -3,23 +3,19 @@
 #include <pthread.h>
 #include "barrier.h"
 
-
 #define Green "\033[0;32m"
 #define Red "\033[0;31m"
 #define End "\033[0m"
 
 #define N 10
-#define ITERS 1
+#define ITERS 4
 #define W 5
 #define min(i, j) (((i) < (j)) ? (i) : (j))
 
 barrier barrera;
 pthread_t hilos[W];
-sem_t semaforos[W];
-pid_t arrSemaforos[W];
 
 float arr1[N], arr2[N];
-
 
 void calor(float *arr, int lo, int hi, float *arr2) {
     int i;
@@ -42,28 +38,24 @@ void * thr(void *arg) {
     int lo = cut(N, id, W), hi = cut(N, id+1, W);
     int i;
     for (i = 0; i < ITERS; i++) {
-
         calor(arr1, lo, hi, arr2);
-        printf(Green"Termine el primer calor.\n"End);
+        printf(Red"Termine el calor 1\n"End);
         barrier_wait(&barrera);
 
-
         calor(arr2, lo, hi, arr1);
-        printf(Red"Termine el segundo calor.\n"End);
+        printf(Green"Termine el calor 2\n"End);
         barrier_wait(&barrera);
     }
 }
 
 int main() {
-    printf("\n\n\n");
+
 
     for (int i = 0; i < N; i++) {
         arr1[i] = rand() % N;
         arr2[i] = rand() % N;
     }
 
-    barrera.semaforos = semaforos;
-    barrera.arrSemaforos = arrSemaforos;
     barrier_init(&barrera, W);
     
     for(int i = 0; i < W; i++ ) {

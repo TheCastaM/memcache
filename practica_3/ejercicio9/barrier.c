@@ -1,70 +1,67 @@
 #include "barrier.h"
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <semaphore.h>
 
-#define Green "\033[0;32m"
-#define Red "\033[0;31m"
-#define End "\033[0m"
-
-
+sem_t par, impar;
+pthread_mutex_t mutex;
 
 void barrier_init(barrier *b, int n) {
-    b->esperando = 0;
     b->total = n;
+    b->paso = 0;
+    b->bloqueadosPar = 0;
+    b->bloqueadosImpar = 0;
 
-    for(int i = 0; i < b->total; i++)
-        b->arrSemaforos[i] = 0;
-    
-    for(int i = 0; i < n; i++) {
-        sem_init(&b->semaforos[i], 0, 0);   
-    }
-    pthread_mutex_init(&b->lock, NULL);
+    sem_init(&par, 0, 0);
+    sem_init(&impar, 0, 0);
+    pthread_mutex_init(&mutex, NULL);
 }
 
-int semaforo_idx(pid_t pid, pid_t* arr) {
-    for (int i = 0; i < sizeof(arr); i++) {
-        if (arr[i] == pid) {
-            return i;
-        } else if (arr[i] == 0) {
-            arr[i] = pid;
-            return i;
-        }
-    }
-}
 
 void barrier_wait(barrier *b) {
-    pthread_mutex_lock(&b->lock);
-
-    // b->esperando = b->esperando + 1;
-    // printf("Entre... %d\n", b->esperando);
-    
-    if(b->esperando + 1 == b->total) {
-        b->esperando = 0;
-        
-        printf(Green"Yo desbloqueo\n"End);
-        
-        int idx = semaforo_idx(getpid(), b->arrSemaforos);
-
-        for(int i = 0; i < b->total - 1; i++) {
-            if (i != idx)
-                sem_post(&b->semaforos[i]);
+    pthread_mutex_lock(&mutex);
+    /* Soy el hilo que va parar o desbloquear los otros. */
+    if (b->paso % 2 == 0) {
+        /* Es un paso par.
+        (estan desbloqueados los pares y se bloquean 
+        como si fueran impares) */
+        if (b->bloqueadosPar + 1 == b->total) {
+            /* Soy el ultimo par en bloquear. Significa que ya
+            tenemos que dar un paso asi que desbloqueo los impares
+            y yo sigo. */
+            b->paso = b->paso + 1;
+            b->bloqueadosPar = 0;
+            for(int i = 0; i < b->total - 1; i++)
+                sem_post(&impar);
+            /* Una vez todos desbloqueados suelto el mutex. */
+            pthread_mutex_unlock(&mutex);
+        } else {
+            /* Todavia quedan pares por bloquear.Me bloqueo 
+            esperando a el siguiente turno (impar) y suelto
+            el lock. */
+            b->bloqueadosPar = b->bloqueadosPar + 1;
+            pthread_mutex_unlock(&mutex);
+            sem_wait(&impar);
         }
-
-        pthread_mutex_unlock(&b->lock);
-        printf("Soy el numero: %d\n", b->total-1);
-
     } else {
-        b->esperando = b->esperando + 1;
-        // printf("Bloqueando %d\n", i);
-
-        int i = semaforo_idx(getpid(), b->arrSemaforos);
-
-        pthread_mutex_unlock(&b->lock);
-        // printf(Red"Dejo el mutex %d\n"End, i);
-        // printf("Soy el numero: %d\n", i);
-
-        sem_wait(&b->semaforos[i]);
-        // printf("Me desbloquearon %d\n", i);
+        /* Es un paso impar. (estan desbloqueados los impares 
+        y se bloquean porque van a ser pares)*/
+        if (b->bloqueadosImpar + 1 == b->total) {
+            /* Soy el ulitmo impar en bloquear. Significa que ya 
+            tenemos que dar un paso y desbloquera los pares. */
+            b->paso = b->paso + 1;
+            b->bloqueadosImpar = 0;
+            for(int i = 0; i < b->total - 1; i++)
+                sem_post(&par);
+            /* Una vez todos desbloqueados suelto el mutex. */
+            pthread_mutex_unlock(&mutex);            
+        } else {
+            /* Todavia quedan impares por bloquear
+            Me bloqueo esperando a el siguiente turno (par) 
+            y suelto el mutex. */
+            b->bloqueadosImpar = b->bloqueadosImpar + 1;
+            pthread_mutex_unlock(&mutex);
+            sem_wait(&par);
+        }
     }
 }
